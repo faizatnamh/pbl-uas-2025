@@ -1,0 +1,9 @@
+# Ignore environment file
+.env
+
+# Optional ignores (untuk project golang)
+logs/
+bin/
+*.exe
+.vscode/
+.idea/
