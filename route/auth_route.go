@@ -6,7 +6,6 @@ import (
 )
 
 func AuthRoute(router fiber.Router, userService *service.UserService) {
-	auth := router.Group("/auth")
-	auth.Post("/login", userService.Login)
-	auth.Get("/profile", userService.Profile)
+	router.Post("/login", userService.Login)
+	router.Get("/profile", userService.Profile)
 }

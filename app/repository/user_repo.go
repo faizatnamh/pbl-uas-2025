@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"pbluas/app/models"
+	"fmt"
 )
 
 type UserRepository interface {
@@ -22,26 +23,29 @@ func (r *userRepository) FindByUsername(username string) (*models.User, error) {
 	user := models.User{}
 
 	query := `
-        SELECT 
-            users.id,
-            users.username,
-            users.email,
-            users.full_name,
-            users.password_hash,
-            users.is_active,
-            roles.name
-        FROM users
-        JOIN roles ON roles.id = users.role_id
-        WHERE users.username = $1
-        LIMIT 1
-    `
+		SELECT 
+			users.id,
+			users.username,
+			users.email,
+			users.password_hash,
+			users.full_name,
+			users.is_active,
+			users.role_id,
+			roles.name
+		FROM users
+		JOIN roles ON roles.id = users.role_id
+		WHERE users.username = $1
+		LIMIT 1
+	`
+
 	err := r.DB.QueryRow(query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Email,
-		&user.FullName,
 		&user.PasswordHash,
+		&user.FullName,
 		&user.IsActive,
+		&user.RoleID, 
 		&user.RoleName,
 	)
 
@@ -52,5 +56,14 @@ func (r *userRepository) FindByUsername(username string) (*models.User, error) {
 		return nil, err
 	}
 
-	return &user, nil
+	
+fmt.Println("DEBUG: SCANNED USER = ")
+fmt.Println(" ID        =", user.ID)
+fmt.Println(" USERNAME  =", user.Username)
+fmt.Println(" EMAIL     =", user.Email)
+fmt.Println(" FULLNAME  =", user.FullName)
+fmt.Println(" HASH      =", user.PasswordHash)
+fmt.Println(" ACTIVE    =", user.IsActive)
+fmt.Println(" ROLE      =", user.RoleName)
+return &user, nil
 }

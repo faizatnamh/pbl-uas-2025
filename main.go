@@ -5,29 +5,42 @@ import (
     "pbluas/database"
     "pbluas/app/repository"
     "pbluas/app/service"
+    "pbluas/middleware"
     "pbluas/route"
 
     "github.com/gofiber/fiber/v2"
 )
 
 func main() {
+    // Load .env
     config.LoadEnv()
 
+    // Fiber app
     app := fiber.New()
 
-    // Connect DB
+    // Database
     db := database.ConnectPostgres()
 
-    // Init repo & service
+    // Init repo
     userRepo := repository.NewUserRepository(db)
-    userService := service.NewUserService(userRepo)
+    permRepo := repository.NewPermissionRepository(db)
 
-    // =============================
-    // REGISTER ROUTE DI SINI!
-    // =============================
+    // Init service
+    userService := service.NewUserService(userRepo, permRepo)
+ 
+    // PUBLIC ROUTES (NO TOKEN)
+    auth := app.Group("/api/v1/auth")
+    route.AuthRoute(auth, userService)
 
+ 
+    // PROTECTED ROUTES (JWT)
     api := app.Group("/api/v1")
-    route.AuthRoute(api, userService)   // <-- ROUTE LOGIN & PROFILE AKTIF
+    api.Use(middleware.JWTMiddleware)
 
+    route.AdminRoute(api, permRepo)
+    route.MahasiswaRoute(api, permRepo)
+    route.DosenRoute(api, permRepo)
+
+    // Start server
     app.Listen(":8080")
 }

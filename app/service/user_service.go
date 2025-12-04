@@ -2,23 +2,28 @@ package service
 
 import (
 	"os"
-	"time"
 	"strconv"
-	"strings" 
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 
+	"pbluas/app/models"
 	"pbluas/app/repository"
 )
 
 type UserService struct {
-	Repo repository.UserRepository
+	Repo     repository.UserRepository
+	PermRepo *repository.PermissionRepository // --- DITAMBAHKAN
 }
 
-func NewUserService(repo repository.UserRepository) *UserService {
-	return &UserService{Repo: repo}
+func NewUserService(repo repository.UserRepository, perm *repository.PermissionRepository) *UserService {
+	return &UserService{
+		Repo:     repo,
+		PermRepo: perm, // --- DITAMBAHKAN
+	}
 }
 
 type LoginRequest struct {
@@ -29,28 +34,65 @@ type LoginRequest struct {
 func (s *UserService) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 
+	// -----------------------------
+	// 400 – Invalid Request Body
+	// -----------------------------
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "invalid request"})
+		return c.Status(400).JSON(fiber.Map{
+			"code":        400,
+			"message":     "Bad Request",
+			"description": "Invalid request body",
+		})
 	}
 
+	// -----------------------------
+	// 401 – Username not found
+	// -----------------------------
 	user, err := s.Repo.FindByUsername(req.Username)
 	if err != nil {
-		return c.Status(401).JSON(fiber.Map{"message": "invalid username or password"})
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Invalid username or password",
+		})
 	}
 
+	// -----------------------------
+	// 403 – User inactive
+	// -----------------------------
 	if !user.IsActive {
-		return c.Status(403).JSON(fiber.Map{"message": "user not active"})
+		return c.Status(403).JSON(fiber.Map{
+			"code":        403,
+			"message":     "Forbidden",
+			"description": "User is not active",
+		})
 	}
 
+	// -----------------------------
+	// 401 – Wrong password
+	// -----------------------------
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)) != nil {
-		return c.Status(401).JSON(fiber.Map{"message": "invalid username or password"})
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Invalid username or password",
+		})
 	}
 
+	// ======================================================
+	// 🔥 AMBIL LIST PERMISSIONS SESUAI ROLE
+	// ======================================================
+	permissions, err := s.PermRepo.GetPermissionsByRole(user.RoleName)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Failed to load permissions",
+		})
+	}
+
+	// ======================================================
+	// 🔥 GENERATE ACCESS TOKEN
+	// ======================================================
 	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "secret123"
-	}
-
 	exp, _ := strconv.Atoi(os.Getenv("JWT_EXPIRES_MINUTES"))
 	if exp == 0 {
 		exp = 60
@@ -63,46 +105,77 @@ func (s *UserService) Login(c *fiber.Ctx) error {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(secret))
+	accessToken, _ := token.SignedString([]byte(secret))
+
+	// ======================================================
+	// 🔥 GENERATE REFRESH TOKEN
+	// ======================================================
+	refreshClaims := jwt.MapClaims{
+		"id":  user.ID,
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+	}
+
+	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken, _ := refresh.SignedString([]byte(secret))
+
+	// ======================================================
+	// 🔥 RESPONSE SESUAI SRS
+	// ======================================================
+
+	authUser := models.AuthUserResponse{
+		ID:          user.ID,
+		Username:    user.Username,
+		FullName:    user.FullName,
+		Role:        user.RoleName,
+		Permissions: permissions,
+	}
 
 	return c.JSON(fiber.Map{
 		"status": "success",
 		"data": fiber.Map{
-			"token": tokenString,
-			"user": fiber.Map{
-				"id":       user.ID,
-				"username": user.Username,
-				"fullname": user.FullName,
-				"email":    user.Email,
-				"role":     user.RoleName,
-			},
+			"token":        accessToken,
+			"refreshToken": refreshToken,
+			"user":         authUser,
 		},
 	})
 }
 
+// ====================================================================
+// PROFILE HANDLER — AMAN ATAU TIDAK? Masih sama seperti punyamu (benar)
+// ====================================================================
 func (s *UserService) Profile(c *fiber.Ctx) error {
-	// Ambil token dari header
-	tokenString := c.Get("Authorization")
-	if tokenString == "" {
-		return c.Status(401).JSON(fiber.Map{"message": "missing token"})
+	tokenHeader := c.Get("Authorization")
+
+	if tokenHeader == "" {
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Missing token",
+		})
 	}
 
-	// Format: "Bearer <token>" → ambil token saja
-	parts := strings.Split(tokenString, " ")
+	parts := strings.Split(tokenHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return c.Status(401).JSON(fiber.Map{"message": "invalid token"})
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Invalid token format",
+		})
 	}
 
-	tokenString = parts[1]
+	tokenStr := parts[1]
 	secret := os.Getenv("JWT_SECRET")
 
-	// Parse token
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 
 	if err != nil || !token.Valid {
-		return c.Status(401).JSON(fiber.Map{"message": "invalid or expired token"})
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Invalid or expired token",
+		})
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
@@ -110,8 +183,8 @@ func (s *UserService) Profile(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"status": "success",
 		"data": fiber.Map{
-			"id":       claims["id"],
-			"role":     claims["role"],
+			"id":   claims["id"],
+			"role": claims["role"],
 		},
 	})
 }
