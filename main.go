@@ -37,7 +37,7 @@ func main() {
     api := app.Group("/api/v1")
     api.Use(middleware.JWTMiddleware)
 
-    route.AdminRoute(api, permRepo)
+    route.AdminRoute(api, permRepo, userService)
     route.MahasiswaRoute(api, permRepo)
     route.DosenRoute(api, permRepo)
 

@@ -283,3 +283,163 @@ func (s *UserService) Logout(c *fiber.Ctx) error {
 		"message": "Logged out successfully",
 	})
 }
+
+// GET ALL USERS (ADMIN)
+func (s *UserService) GetAllUsers(c *fiber.Ctx) error {
+
+    users, err := s.Repo.GetAllUsers()
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{
+            "message": "Failed to retrieve users",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "data":   users,
+    })
+}
+
+// GET USER BY ID
+func (s *UserService) GetUserByID(c *fiber.Ctx) error {
+
+    id := c.Params("id")
+    user, err := s.Repo.FindByUserID(id)
+
+    if err != nil {
+        return c.Status(404).JSON(fiber.Map{
+            "message": "User not found",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "data":   user,
+    })
+}
+
+// CREATE USER (ADMIN)
+func (s *UserService) CreateUser(c *fiber.Ctx) error {
+
+    var req models.CreateUserRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(400).JSON(fiber.Map{
+            "message": "Invalid request body",
+        })
+    }
+
+    // Hash password
+    hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
+    newUser := &models.User{
+        Username:     req.Username,
+        Email:        req.Email,
+        PasswordHash: string(hashed),
+        FullName:     req.FullName,
+        RoleID:       req.RoleID,
+        IsActive:     true,
+    }
+
+    if err := s.Repo.CreateUser(newUser); err != nil {
+        return c.Status(500).JSON(fiber.Map{
+            "message": "Failed to create user",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "message": "User created successfully",
+    })
+}
+
+// UPDATE USER (ADMIN)
+func (s *UserService) UpdateUser(c *fiber.Ctx) error {
+
+    id := c.Params("id")
+
+    user, err := s.Repo.FindByUserID(id)
+    if err != nil {
+        return c.Status(404).JSON(fiber.Map{
+            "message": "User not found",
+        })
+    }
+
+    var req models.UpdateUserRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(400).JSON(fiber.Map{
+            "message": "Invalid request body",
+        })
+    }
+
+    // Update fields
+    if req.Email != "" {
+        user.Email = req.Email
+    }
+    if req.FullName != "" {
+        user.FullName = req.FullName
+    }
+    if req.RoleID != "" {
+        user.RoleID = req.RoleID
+    }
+    if req.IsActive != nil {
+        user.IsActive = *req.IsActive
+    }
+    if req.Password != "" {
+        hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+        user.PasswordHash = string(hashed)
+    }
+
+    if err := s.Repo.UpdateUser(user); err != nil {
+        return c.Status(500).JSON(fiber.Map{
+            "message": "Failed to update user",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "message": "User updated successfully",
+    })
+}
+
+// DELETE USER
+func (s *UserService) DeleteUser(c *fiber.Ctx) error {
+
+    id := c.Params("id")
+
+    err := s.Repo.DeleteUser(id)
+    if err != nil {
+        return c.Status(500).JSON(fiber.Map{
+            "message": "Failed to delete user",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "message": "User deleted successfully",
+    })
+}
+
+// UPDATE USER ROLE (ADMIN)
+func (s *UserService) UpdateUserRole(c *fiber.Ctx) error {
+
+    id := c.Params("id")
+
+    var req models.UpdateUserRoleRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(400).JSON(fiber.Map{
+            "message": "Invalid request body",
+        })
+    }
+
+    if err := s.Repo.UpdateUserRole(id, req.RoleID); err != nil {
+        return c.Status(500).JSON(fiber.Map{
+            "message": "Failed to update role",
+        })
+    }
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "message": "Role updated successfully",
+    })
+}
+

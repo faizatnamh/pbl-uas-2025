@@ -23,3 +23,26 @@ type AuthUserResponse struct {
 	Role        string   `json:"role"`
 	Permissions []string `json:"permissions"`
 }
+
+// Admin create user
+type CreateUserRequest struct {
+    Username string `json:"username"`
+    Email    string `json:"email"`
+    Password string `json:"password"`
+    FullName string `json:"full_name"`
+    RoleID   string `json:"role_id"`
+}
+
+// Admin update user
+type UpdateUserRequest struct {
+    Email    string `json:"email"`
+    FullName string `json:"full_name"`
+    Password string `json:"password"`
+    RoleID   string `json:"role_id"`
+    IsActive *bool  `json:"is_active"`
+}
+
+// Admin assign role
+type UpdateUserRoleRequest struct {
+    RoleID string `json:"role_id"`
+}
