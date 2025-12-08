@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	FindByUsername(username string) (*models.User, error)
+	FindByUserID(id string) (*models.User, error)
 }
 
 type userRepository struct {
@@ -67,3 +68,45 @@ fmt.Println(" ACTIVE    =", user.IsActive)
 fmt.Println(" ROLE      =", user.RoleName)
 return &user, nil
 }
+
+// FindByUserID retrieves a user by their ID
+func (r *userRepository) FindByUserID(id string) (*models.User, error) {
+	user := models.User{}
+
+	query := `
+		SELECT 
+			users.id,
+			users.username,
+			users.email,
+			users.password_hash,
+			users.full_name,
+			users.is_active,
+			users.role_id,
+			roles.name
+		FROM users
+		JOIN roles ON roles.id = users.role_id
+		WHERE users.id = $1
+		LIMIT 1
+	`
+
+	err := r.DB.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.IsActive,
+		&user.RoleID,
+		&user.RoleName,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
