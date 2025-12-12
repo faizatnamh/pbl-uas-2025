@@ -3,8 +3,10 @@ package main
 import (
     "pbluas/config"
     "pbluas/database"
+
     "pbluas/app/repository"
     "pbluas/app/service"
+
     "pbluas/middleware"
     "pbluas/route"
 
@@ -12,35 +14,36 @@ import (
 )
 
 func main() {
-    // Load .env
+    // Load environment variables
     config.LoadEnv()
 
-    // Fiber app
+    // Initialize Fiber
     app := fiber.New()
 
-    // Database
+    // Connect to PostgreSQL
     db := database.ConnectPostgres()
 
-    // Init repo
+    // -------- INIT REPOSITORIES --------
     userRepo := repository.NewUserRepository(db)
     permRepo := repository.NewPermissionRepository(db)
+    studentRepo := repository.NewStudentRepository(db)
+    lecturerRepo := repository.NewLecturerRepository(db)
 
-    // Init service
+    // -------- INIT SERVICES --------
     userService := service.NewUserService(userRepo, permRepo)
- 
-    // PUBLIC ROUTES (NO TOKEN)
+    studentService := service.NewStudentService(studentRepo, lecturerRepo)
+
+    // -------- PUBLIC ROUTES (NO TOKEN) --------
     auth := app.Group("/api/v1/auth")
     route.AuthRoute(auth, userService)
 
- 
-    // PROTECTED ROUTES (JWT)
+    // -------- PROTECTED ROUTES (JWT) --------
     api := app.Group("/api/v1")
     api.Use(middleware.JWTMiddleware)
 
     route.AdminRoute(api, permRepo, userService)
-    route.MahasiswaRoute(api, permRepo)
-    route.DosenRoute(api, permRepo)
+    route.MahasiswaRoute(api, studentService, permRepo)
 
-    // Start server
+    // -------- START SERVER --------
     app.Listen(":8080")
 }

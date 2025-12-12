@@ -1,24 +1,21 @@
 package route
 
-import (
-	"github.com/gofiber/fiber/v2"
-	"pbluas/middleware"
-	"pbluas/app/repository"
-)
+// import (
+// 	"github.com/gofiber/fiber/v2"
+// 	"pbluas/app/service"
+// 	"pbluas/middleware"
+// 	"pbluas/app/repository"
+// )
 
-func DosenRoute(api fiber.Router, permRepo *repository.PermissionRepository) {
-	dosen := api.Group("/dosen")
+// func LecturerRoute(api fiber.Router, permRepo *repository.PermissionRepository, svc *service.LecturerService) {
+// 	r := api.Group("/lecturers")
 
-	dosen.Use(middleware.JWTMiddleware)
-	dosen.Use(func(c *fiber.Ctx) error {
-		return middleware.RBACMiddleware(c, permRepo,
-			"achievement:read",
-			"achievement:verify",
-		)
-	})
+// 	// Hanya admin yang boleh mengakses
+// 	r.Use(middleware.JWTMiddleware)
+// 	r.Use(func(c *fiber.Ctx) error {
+// 		return middleware.RBACMiddleware(c, permRepo, "admin:manage")
+// 	})
 
-	dosen.Get("/test", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": "Dosen Wali Only"})
-	})
-}
-
+// 	r.Get("/", svc.GetAll)
+// 	r.Get("/:id/advisees", svc.GetAdvisees)
+// }

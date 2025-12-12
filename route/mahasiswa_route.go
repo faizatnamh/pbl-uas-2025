@@ -2,24 +2,20 @@ package route
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"pbluas/app/service"
 	"pbluas/middleware"
 	"pbluas/app/repository"
 )
 
-func MahasiswaRoute(api fiber.Router, permRepo *repository.PermissionRepository) {
-	mhs := api.Group("/mahasiswa")
+func MahasiswaRoute(api fiber.Router, studentService *service.StudentService, permRepo *repository.PermissionRepository) {
 
-	mhs.Use(middleware.JWTMiddleware)
-	mhs.Use(func(c *fiber.Ctx) error {
-		return middleware.RBACMiddleware(c, permRepo,
-			"achievement:create",
-			"achievement:read",
-			"achievement:update",
-		)
-	})
+	require := func(perms ...string) fiber.Handler {
+		return func(c *fiber.Ctx) error {
+			return middleware.RBACMiddleware(c, permRepo, perms...)
+		}
+	}
 
-	mhs.Get("/test", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": "Mahasiswa Only"})
-	})
+	// STUDENT ROUTES (akses admin + dosen wali)
+	api.Get("/students", require("student:read"), studentService.GetStudents)
+	api.Get("/students/:id", require("student:read"), studentService.GetStudentByID)
 }
-
