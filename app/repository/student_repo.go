@@ -9,6 +9,7 @@ type StudentRepository interface {
 	GetAllStudents() ([]models.StudentDetail, error)
 	GetStudentsByAdvisor(advisorID string) ([]models.StudentDetail, error)
 	GetStudentByID(id string) (*models.StudentDetail, error)
+	UpdateAdvisor(studentID string, lecturerID string) error
 }
 
 type studentRepository struct {
@@ -166,4 +167,14 @@ func (r *studentRepository) GetStudentByID(id string) (*models.StudentDetail, er
 	if advName.Valid { tmp := advName.String; s.AdvisorName = &tmp }
 
 	return &s, nil
+}
+
+func (r *studentRepository) UpdateAdvisor(studentID string, lecturerID string) error {
+	query := `
+		UPDATE students
+		SET advisor_id = $1
+		WHERE id = $2
+	`
+	_, err := r.DB.Exec(query, lecturerID, studentID)
+	return err
 }

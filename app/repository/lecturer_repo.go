@@ -8,6 +8,8 @@ import (
 type LecturerRepository interface {
 	GetLecturerByUserID(userID string) (*models.Lecturer, error)
 	GetLecturerByID(id string) (*models.Lecturer, error)
+	GetAllLecturers() ([]models.Lecturer, error)
+	GetAll() ([]models.Lecturer, error)
 }
 
 type lecturerRepository struct {
@@ -64,4 +66,63 @@ func (r *lecturerRepository) GetLecturerByID(id string) (*models.Lecturer, error
 	}
 
 	return &lec, nil
+}
+
+func (r *lecturerRepository) GetAllLecturers() ([]models.Lecturer, error) {
+	query := `
+		SELECT id, user_id, lecturer_id, department, created_at
+		FROM lecturers
+	`
+
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.Lecturer
+	for rows.Next() {
+		var l models.Lecturer
+		if err := rows.Scan(
+			&l.ID,
+			&l.UserID,
+			&l.LecturerID,
+			&l.Department,
+			&l.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		list = append(list, l)
+	}
+
+	return list, nil
+}
+
+func (r *lecturerRepository) GetAll() ([]models.Lecturer, error) {
+	query := `
+		SELECT id, user_id, lecturer_id, department, created_at
+		FROM lecturers
+	`
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.Lecturer
+	for rows.Next() {
+		var l models.Lecturer
+		if err := rows.Scan(
+			&l.ID,
+			&l.UserID,
+			&l.LecturerID,
+			&l.Department,
+			&l.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		list = append(list, l)
+	}
+
+	return list, nil
 }

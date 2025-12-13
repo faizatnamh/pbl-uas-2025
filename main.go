@@ -32,6 +32,8 @@ func main() {
     // -------- INIT SERVICES --------
     userService := service.NewUserService(userRepo, permRepo)
     studentService := service.NewStudentService(studentRepo, lecturerRepo)
+    lecturerService := service.NewLecturerService(lecturerRepo, studentRepo)
+
 
     // -------- PUBLIC ROUTES (NO TOKEN) --------
     auth := app.Group("/api/v1/auth")
@@ -41,7 +43,7 @@ func main() {
     api := app.Group("/api/v1")
     api.Use(middleware.JWTMiddleware)
 
-    route.AdminRoute(api, permRepo, userService)
+    route.AdminRoute(api,permRepo,userService,studentService,lecturerService,)
     route.MahasiswaRoute(api, studentService, permRepo)
 
     // -------- START SERVER --------

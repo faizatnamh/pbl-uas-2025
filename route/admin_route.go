@@ -7,7 +7,8 @@ import (
 	"pbluas/app/repository"
 )
 
-func AdminRoute(api fiber.Router, permRepo *repository.PermissionRepository, userService *service.UserService) {
+func AdminRoute(api fiber.Router, permRepo *repository.PermissionRepository, userService *service.UserService,studentService *service.StudentService,
+	lecturerService *service.LecturerService) {
 
 	require := func(perms ...string) fiber.Handler {
 		return func(c *fiber.Ctx) error {
@@ -22,4 +23,7 @@ func AdminRoute(api fiber.Router, permRepo *repository.PermissionRepository, use
 	api.Put("/users/:id", require("user:manage"), userService.UpdateUser)
 	api.Delete("/users/:id", require("user:manage"), userService.DeleteUser)
 	api.Put("/users/:id/role", require("user:manage"), userService.UpdateUserRole)
+	api.Put("/students/:id/advisor",require("user:manage"),studentService.AssignAdvisor,)
+	api.Get("/lecturers",require("user:manage"),lecturerService.GetAll,)
+	api.Get("/lecturers/:id/advisees",require("user:manage"),lecturerService.GetAdvisees,)
 }
