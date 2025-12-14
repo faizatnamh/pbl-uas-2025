@@ -44,7 +44,7 @@ func main() {
     api.Use(middleware.JWTMiddleware)
 
     route.AdminRoute(api,permRepo,userService,studentService,lecturerService,)
-    route.MahasiswaRoute(api, studentService, permRepo)
+    route.MahasiswaRoute(api, studentService)
 
     // -------- START SERVER --------
     app.Listen(":8080")

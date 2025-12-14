@@ -27,6 +27,7 @@ func (s *StudentService) GetStudents(c *fiber.Ctx) error {
 	role := claims["role"].(string)
 	userId := claims["id"].(string)
 
+	// Admin → semua mahasiswa
 	if role == "Admin" {
 		list, err := s.StudentRepo.GetAllStudents()
 		if err != nil {
@@ -35,18 +36,29 @@ func (s *StudentService) GetStudents(c *fiber.Ctx) error {
 		return c.JSON(list)
 	}
 
+	// Dosen → semua mahasiswa
 	if role == "Dosen Wali" {
-		lecturer, err := s.LecturerRepo.GetLecturerByUserID(userId)
+		list, err := s.StudentRepo.GetAllStudents()
 		if err != nil {
-			return c.Status(404).JSON(fiber.Map{"message": "lecturer profile not found"})
+			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 		}
+		return c.JSON(list)
+	}
 
-		list, err := s.StudentRepo.GetStudentsByAdvisor(lecturer.ID)
+	// Mahasiswa → data diri sendiri
+	if role == "Mahasiswa" {
+		list, err := s.StudentRepo.GetAllStudents()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return c.JSON(list)
+		for _, student := range list {
+			if student.UserID == userId {
+				return c.JSON([]interface{}{student})
+			}
+		}
+
+		return c.Status(404).JSON(fiber.Map{"message": "student profile not found"})
 	}
 
 	return c.Status(403).JSON(fiber.Map{"message": "forbidden"})
@@ -65,22 +77,21 @@ func (s *StudentService) GetStudentByID(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"message": "student not found"})
 	}
 
-	// Admin → bebas akses
+	// Admin → bebas
 	if role == "Admin" {
 		return c.JSON(student)
 	}
 
-	// Dosen Wali → hanya boleh ambil anak bimbinganna
+	// Dosen → bebas
 	if role == "Dosen Wali" {
-		lecturer, err := s.LecturerRepo.GetLecturerByUserID(userId)
-		if err != nil {
-			return c.Status(404).JSON(fiber.Map{"message": "lecturer not found"})
-		}
+		return c.JSON(student)
+	}
 
-		if student.AdvisorID != nil && *student.AdvisorID == lecturer.ID {
+	// Mahasiswa → hanya diri sendiri
+	if role == "Mahasiswa" {
+		if student.UserID == userId {
 			return c.JSON(student)
 		}
-
 		return c.Status(403).JSON(fiber.Map{"message": "forbidden"})
 	}
 
