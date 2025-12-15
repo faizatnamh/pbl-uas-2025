@@ -10,11 +10,17 @@ type StudentRepository interface {
 	GetStudentsByAdvisor(advisorID string) ([]models.StudentDetail, error)
 	GetStudentByID(id string) (*models.StudentDetail, error)
 	UpdateAdvisor(studentID string, lecturerID string) error
+	GetStudentByUserID(userID string) (*models.Student, error)
 }
 
 type studentRepository struct {
 	DB *sql.DB
 }
+
+// GetStudentByUserID implements StudentRepository.
+// func (r *studentRepository) GetStudentByUserID(userID string) (*models.Student, error) {
+// 	panic("unimplemented")
+// }
 
 func NewStudentRepository(db *sql.DB) StudentRepository {
 	return &studentRepository{DB: db}
@@ -40,7 +46,9 @@ func (r *studentRepository) GetAllStudents() ([]models.StudentDetail, error) {
 	`
 
 	rows, err := r.DB.Query(query)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var list []models.StudentDetail
@@ -61,10 +69,18 @@ func (r *studentRepository) GetAllStudents() ([]models.StudentDetail, error) {
 			&advisorID,
 			&advisorName,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 
-		if advisorID.Valid { tmp := advisorID.String; s.AdvisorID = &tmp }
-		if advisorName.Valid { tmp := advisorName.String; s.AdvisorName = &tmp }
+		if advisorID.Valid {
+			tmp := advisorID.String
+			s.AdvisorID = &tmp
+		}
+		if advisorName.Valid {
+			tmp := advisorName.String
+			s.AdvisorName = &tmp
+		}
 
 		list = append(list, s)
 	}
@@ -93,7 +109,9 @@ func (r *studentRepository) GetStudentsByAdvisor(advisorID string) ([]models.Stu
 	`
 
 	rows, err := r.DB.Query(query, advisorID)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var list []models.StudentDetail
@@ -114,10 +132,18 @@ func (r *studentRepository) GetStudentsByAdvisor(advisorID string) ([]models.Stu
 			&advID,
 			&advName,
 		)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 
-		if advID.Valid { tmp := advID.String; s.AdvisorID = &tmp }
-		if advName.Valid { tmp := advName.String; s.AdvisorName = &tmp }
+		if advID.Valid {
+			tmp := advID.String
+			s.AdvisorID = &tmp
+		}
+		if advName.Valid {
+			tmp := advName.String
+			s.AdvisorName = &tmp
+		}
 
 		list = append(list, s)
 	}
@@ -161,10 +187,18 @@ func (r *studentRepository) GetStudentByID(id string) (*models.StudentDetail, er
 		&advID,
 		&advName,
 	)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
-	if advID.Valid { tmp := advID.String; s.AdvisorID = &tmp }
-	if advName.Valid { tmp := advName.String; s.AdvisorName = &tmp }
+	if advID.Valid {
+		tmp := advID.String
+		s.AdvisorID = &tmp
+	}
+	if advName.Valid {
+		tmp := advName.String
+		s.AdvisorName = &tmp
+	}
 
 	return &s, nil
 }
@@ -178,3 +212,29 @@ func (r *studentRepository) UpdateAdvisor(studentID string, lecturerID string) e
 	_, err := r.DB.Exec(query, lecturerID, studentID)
 	return err
 }
+
+func (r *studentRepository) GetStudentByUserID(userID string) (*models.Student, error) {
+	query := `
+		SELECT id, user_id, student_id, program_study, academic_year, advisor_id
+		FROM students
+		WHERE user_id = $1
+	`
+
+	var student models.Student
+	err := r.DB.QueryRow(query, userID).Scan(
+		&student.ID,
+		&student.UserID,
+		&student.StudentID,
+		&student.ProgramStudy,
+		&student.AcademicYear,
+		&student.AdvisorID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &student, nil
+}
+
+
