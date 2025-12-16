@@ -517,3 +517,56 @@ func (s *AchievementService) Submit(c *fiber.Ctx) error {
 		"message": "achievement submitted for verification",
 	})
 }
+
+func (s *AchievementService) Verify(c *fiber.Ctx) error {
+
+	// ================= AUTH =================
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	mongoID := c.Params("id")
+
+	// ================= PERMISSION =================
+	if role != "Admin" && role != "Dosen" && role != "Dosen Wali" && role != "Lecturer" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// ================= GET REFERENCE =================
+	ref, err := s.ReferenceRepo.GetByMongoID(mongoID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// ================= STATUS CHECK =================
+	if ref.Status != "submitted" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "only submitted achievement can be verified",
+		})
+	}
+
+	// ================= DOSEN WALI CHECK =================
+	if role != "Admin" {
+		allowed, err := s.ReferenceRepo.IsAdvisorOfStudent(userID, ref.StudentID)
+		if err != nil || !allowed {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "you are not advisor of this student",
+			})
+		}
+	}
+
+	// ================= VERIFY =================
+	if err := s.ReferenceRepo.Verify(ref.ID, userID); err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "achievement verified successfully",
+	})
+}

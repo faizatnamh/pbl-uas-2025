@@ -52,5 +52,6 @@ func AchievementRoute(api fiber.Router, achievementService *service.AchievementS
 	ach.Post("/:id/attachments", achievementService.UploadAttachment)
 	ach.Delete("/:id", achievementService.Delete)
 	ach.Post("/:id/submit", achievementService.Submit)
+	ach.Post("/:id/verify", achievementService.Verify)
 
 }

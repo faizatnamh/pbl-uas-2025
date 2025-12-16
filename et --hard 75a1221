@@ -1,0 +1,37 @@
+[33m82b758b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: reset: moving to origin/main
+[33m75a1221[m HEAD@{1}: rebase (abort): returning to refs/heads/main
+[33m82b758b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{2}: pull --rebase origin main (start): checkout 82b758baa57663fb6845b723ed0968cda1eef041
+[33m75a1221[m HEAD@{3}: commit (amend): add submit
+[33m82b758b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{4}: rebase (finish): returning to refs/heads/main
+[33m82b758b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{5}: rebase (continue): add softdelete
+[33m0f75030[m HEAD@{6}: pull --rebase origin main (start): checkout 0f75030c388c4c52cd8ce34758a27c18a96f7b60
+[33m0f3ff31[m HEAD@{7}: commit (amend): add softdelete
+[33m0f75030[m HEAD@{8}: commit (amend): add post achievements/:id/attachments add
+[33m9a84367[m HEAD@{9}: commit: add put achievementst/:id/attachments add
+[33m0b9edcd[m HEAD@{10}: commit: add put achievementst:id
+[33m45744af[m HEAD@{11}: commit: add get achievementst:id
+[33m02583ba[m HEAD@{12}: commit: add achievements post
+[33mb78b012[m HEAD@{13}: commit: revisi students
+[33mdd284e9[m HEAD@{14}: commit: add PUT /api/v1/students/:id/advisor ,GET /api/v1/lecturers ,GET /api/v1/lecturers/:id/advisees
+[33m9f9cf73[m HEAD@{15}: commit: add student service, routes, RBAC fixes
+[33m763b66d[m HEAD@{16}: commit: endpoint admin
+[33mbf59a75[m HEAD@{17}: pull --rebase origin main (finish): returning to refs/heads/main
+[33mbf59a75[m HEAD@{18}: pull --rebase origin main (pick): endpoint refresh dan logout
+[33m925f7a0[m HEAD@{19}: pull --rebase origin main (start): checkout 925f7a0cde69a80ac293931c5f81aeffed580e21
+[33m5493ea3[m HEAD@{20}: commit: endpoint refresh dan logout
+[33m8356ff8[m HEAD@{21}: commit: update fr 2 done
+[33m0ec9dd5[m HEAD@{22}: checkout: moving from 0ec9dd581b15fc3a78770c802e540baec082060f to main
+[33m0ec9dd5[m HEAD@{23}: checkout: moving from main to 0ec9dd5
+[33mfddfd02[m HEAD@{24}: reset: moving to origin/main
+[33m0ec9dd5[m HEAD@{25}: checkout: moving from 700c801cba8becf61a090f8a239f741b54c603c7 to main
+[33m700c801[m[33m ([m[1;32mbackup-fr1[m[33m)[m HEAD@{26}: commit: update fr 1
+[33m0ec9dd5[m HEAD@{27}: checkout: moving from main to 0ec9dd5
+[33m0ec9dd5[m HEAD@{28}: reset: moving to 0ec9dd5
+[33mfddfd02[m HEAD@{29}: reset: moving to fddfd02
+[33mfddfd02[m HEAD@{30}: checkout: moving from 0ec9dd581b15fc3a78770c802e540baec082060f to main
+[33m0ec9dd5[m HEAD@{31}: checkout: moving from main to 0ec9dd
+[33mfddfd02[m HEAD@{32}: commit: perbaikan fr 1, tapi sudah fiks benar insyaallah
+[33m0ec9dd5[m HEAD@{33}: commit: update fr 1 done
+[33m1c7bb5e[m HEAD@{34}: commit: progress kedua
+[33mca5b1e0[m HEAD@{35}: Branch: renamed refs/heads/master to refs/heads/main
+[33mca5b1e0[m HEAD@{37}: commit (initial): first commit

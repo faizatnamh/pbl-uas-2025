@@ -257,3 +257,31 @@ func (r *AchievementReferenceRepository) Submit(id string) error {
 
 	return nil
 }
+
+func (r *AchievementReferenceRepository) Verify(id string, verifiedBy string) error {
+	query := `
+		UPDATE achievement_references
+		SET status = 'verified',
+		    verified_at = NOW(),
+		    verified_by = $2,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'submitted'
+	`
+
+	res, err := r.DB.Exec(query, id, verifiedBy)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
