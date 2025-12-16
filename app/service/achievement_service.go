@@ -249,3 +249,66 @@ func (s *AchievementService) Detail(c *fiber.Ctx) error {
 	})
 }
 
+func (s *AchievementService) Update(c *fiber.Ctx) error {
+
+	// 🔐 ambil claims
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	// ❌ hanya mahasiswa
+	if role != "Mahasiswa" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only mahasiswa can update achievement",
+		})
+	}
+
+	achievementID := c.Params("id")
+
+	// 1️⃣ ambil reference
+	ref, err := s.ReferenceRepo.GetByMongoID(achievementID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// 2️⃣ cek owner
+	student, err := s.StudentRepo.GetStudentByUserID(userID)
+	if err != nil || student.ID != ref.StudentID {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// 3️⃣ cek status
+	if ref.Status != "draft" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only draft achievement can be updated",
+		})
+	}
+
+	// 4️⃣ parse body
+	var req models.AchievementCreateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+
+	// 5️⃣ update MongoDB
+	err = s.AchievementRepo.UpdateByID(
+		context.Background(),
+		achievementID,
+		req,
+	)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "achievement updated successfully",
+	})
+}

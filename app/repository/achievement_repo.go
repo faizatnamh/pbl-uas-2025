@@ -76,3 +76,34 @@ func (r *AchievementRepository) FindByID(ctx context.Context, id string) (*model
 
 	return &result, nil
 }
+
+func (r *AchievementRepository) UpdateByID(
+	ctx context.Context,
+	id string,
+	req models.AchievementCreateRequest,
+) error {
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"achievementType": req.AchievementType,
+			"title":           req.Title,
+			"description":     req.Description,
+			"details":         req.Details,
+			"tags":            req.Tags,
+			"updatedAt":       time.Now(),
+		},
+	}
+
+	_, err = r.Collection.UpdateOne(
+		ctx,
+		bson.M{"_id": oid},
+		update,
+	)
+
+	return err
+}
