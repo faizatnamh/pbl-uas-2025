@@ -14,6 +14,7 @@ type Achievement struct {
 	Description     string              `bson:"description" json:"description"`
 	Details         AchievementDetails  `bson:"details" json:"details"`
 	Tags            []string            `bson:"tags" json:"tags"`
+	Attachments []AchievementAttachment `bson:"attachments,omitempty" json:"attachments,omitempty"`
 	CreatedAt       time.Time           `bson:"createdAt" json:"createdAt"`
 	UpdatedAt       time.Time           `bson:"updatedAt" json:"updatedAt"`
 }
@@ -34,4 +35,11 @@ type AchievementCreateRequest struct {
 	Description     string             `json:"description"`
 	Details         AchievementDetails `json:"details"` // ✅ FIX
 	Tags            []string           `json:"tags"`
+}
+
+type AchievementAttachment struct {
+	FileName   string    `bson:"fileName" json:"fileName"`
+	FileURL    string    `bson:"fileUrl" json:"fileUrl"`
+	FileType   string    `bson:"fileType" json:"fileType"`
+	UploadedAt time.Time `bson:"uploadedAt" json:"uploadedAt"`
 }

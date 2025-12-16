@@ -49,5 +49,6 @@ func AchievementRoute(api fiber.Router, achievementService *service.AchievementS
 	ach.Get("/", achievementService.ListByRole)
 	ach.Get("/:id", achievementService.Detail)
 	ach.Put("/:id", achievementService.Update)
+	ach.Post("/:id/attachments", achievementService.UploadAttachment)
 
 }

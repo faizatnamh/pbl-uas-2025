@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-
+	"fmt"
+	"os"
+	"path"
+	"time"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-
 	"pbluas/app/models"
 	"pbluas/app/repository"
 )
@@ -310,5 +312,87 @@ func (s *AchievementService) Update(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "achievement updated successfully",
+	})
+}
+
+func (s *AchievementService) UploadAttachment(c *fiber.Ctx) error {
+
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	if role != "Mahasiswa" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only mahasiswa can upload attachment",
+		})
+	}
+
+	achievementID := c.Params("id")
+
+	// 1️⃣ ambil reference
+	ref, err := s.ReferenceRepo.GetByMongoID(achievementID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// 2️⃣ cek owner
+	student, err := s.StudentRepo.GetStudentByUserID(userID)
+	if err != nil || student.ID != ref.StudentID {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// 3️⃣ cek status
+	if ref.Status != "draft" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only draft achievement can upload attachment",
+		})
+	}
+
+	// 4️⃣ ambil file
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "file is required",
+		})
+	}
+
+	// 5️⃣ simpan file
+	uploadDir := "./uploads/achievements"
+	_ = os.MkdirAll(uploadDir, os.ModePerm)
+
+	filename := fmt.Sprintf("%s_%s", achievementID, file.Filename)
+	filePath := path.Join(uploadDir, filename)
+
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "failed to save file",
+		})
+	}
+
+	// 6️⃣ simpan metadata ke Mongo
+	attachment := models.AchievementAttachment{
+		FileName:   file.Filename,
+		FileURL:    "/uploads/achievements/" + filename,
+		FileType:   file.Header.Get("Content-Type"),
+		UploadedAt: time.Now(),
+	}
+
+	err = s.AchievementRepo.AddAttachment(
+		context.Background(),
+		achievementID,
+		attachment,
+	)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "attachment uploaded successfully",
 	})
 }

@@ -107,3 +107,32 @@ func (r *AchievementRepository) UpdateByID(
 
 	return err
 }
+
+func (r *AchievementRepository) AddAttachment(
+	ctx context.Context,
+	id string,
+	attachment models.AchievementAttachment,
+) error {
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$push": bson.M{
+			"attachments": attachment,
+		},
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+		},
+	}
+
+	_, err = r.Collection.UpdateOne(
+		ctx,
+		bson.M{"_id": oid},
+		update,
+	)
+
+	return err
+}
