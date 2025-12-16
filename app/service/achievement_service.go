@@ -396,3 +396,124 @@ func (s *AchievementService) UploadAttachment(c *fiber.Ctx) error {
 		"message": "attachment uploaded successfully",
 	})
 }
+
+func (s *AchievementService) Delete(c *fiber.Ctx) error {
+
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	// 1️⃣ hanya mahasiswa
+	if role != "Mahasiswa" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only mahasiswa can delete achievement",
+		})
+	}
+
+	achievementID := c.Params("id")
+	if achievementID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "achievement id required",
+		})
+	}
+
+	// 2️⃣ ambil reference
+	ref, err := s.ReferenceRepo.GetByMongoID(achievementID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// 3️⃣ cek owner
+	student, err := s.StudentRepo.GetStudentByUserID(userID)
+	if err != nil || student.ID != ref.StudentID {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// 4️⃣ cek status
+	if ref.Status != "draft" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "only draft achievement can be deleted",
+		})
+	}
+
+	// 5️⃣ SOFT DELETE
+	if err := s.ReferenceRepo.SoftDelete(ref.ID); err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "achievement deleted successfully",
+	})
+}
+
+func (s *AchievementService) Submit(c *fiber.Ctx) error {
+
+	// ================= AUTH =================
+	claims, ok := c.Locals("user_claims").(jwt.MapClaims)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{
+			"message": "unauthorized",
+		})
+	}
+
+	userID := claims["id"].(string)
+	role := claims["role"].(string)
+	mongoID := c.Params("id")
+
+	// ================= PERMISSION =================
+	if role != "Mahasiswa" && role != "Admin" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// ================= GET REFERENCE =================
+	// pakai method yang SUDAH ADA di repo kamu
+	ref, err := s.ReferenceRepo.GetByMongoID(mongoID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// ================= STATUS CHECK =================
+	if ref.Status != "draft" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "only draft achievement can be submitted",
+		})
+	}
+
+	// ================= OWNERSHIP =================
+	if role == "Mahasiswa" {
+		student, err := s.StudentRepo.GetStudentByUserID(userID)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "student profile not found",
+			})
+		}
+
+		if ref.StudentID != student.ID {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "not your achievement",
+			})
+		}
+	}
+
+	// ================= SUBMIT =================
+	// pakai method Submit(id) yang kamu tambahkan di repo
+	if err := s.ReferenceRepo.Submit(ref.ID); err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "achievement submitted for verification",
+	})
+}

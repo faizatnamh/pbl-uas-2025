@@ -218,3 +218,42 @@ func (r *AchievementReferenceRepository) IsAdvisorOfStudent(userID, studentID st
 
 	return count > 0, nil
 }
+
+func (r *AchievementReferenceRepository) SoftDelete(id string) error {
+	query := `
+		UPDATE achievement_references
+		SET status = 'deleted',
+		    updated_at = NOW()
+		WHERE id = $1
+	`
+
+	_, err := r.DB.Exec(query, id)
+	return err
+}
+
+func (r *AchievementReferenceRepository) Submit(id string) error {
+	query := `
+		UPDATE achievement_references
+		SET status = 'submitted',
+		    submitted_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'draft'
+	`
+
+	res, err := r.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
