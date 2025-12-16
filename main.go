@@ -84,7 +84,7 @@ mongoDB := database.MongoDB()
 	achievementService := service.NewAchievementService(
 		achievementRepo,
 		achievementRefRepo,
-        studentRepo, // ✅ studentRepo adalah interface
+        studentRepo, 
 	)
 
 	// -------- PUBLIC ROUTES --------

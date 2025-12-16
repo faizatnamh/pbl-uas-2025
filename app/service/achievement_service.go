@@ -102,4 +102,150 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 	})
 }
 
+func (s *AchievementService) ListByRole(c *fiber.Ctx) error {
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	var refs []models.AchievementReference
+	var err error
+
+	switch role {
+case "Mahasiswa":
+	student, err := s.StudentRepo.GetStudentByUserID(userID)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "student profile not found",
+		})
+	}
+	refs, err = s.ReferenceRepo.GetByStudentID(student.ID)
+
+case "Admin":
+	refs, err = s.ReferenceRepo.GetAll()
+
+// 🔥 INI KUNCI UTAMA UNTUK DOSEN WALI
+case "Dosen", "Dosen Wali", "Lecturer":
+	refs, err = s.ReferenceRepo.GetByAdvisorUserID(userID)
+
+default:
+	return c.Status(403).JSON(fiber.Map{
+		"message": "forbidden",
+	})
+}
+
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	// ambil mongo ids
+	var mongoIDs []string
+	statusMap := make(map[string]string)
+
+	for _, r := range refs {
+		mongoIDs = append(mongoIDs, r.MongoID)
+		statusMap[r.MongoID] = r.Status
+	}
+
+	achievements, err := s.AchievementRepo.FindByIDs(context.Background(), mongoIDs)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	// gabungkan status
+	var response []fiber.Map
+	for _, a := range achievements {
+		response = append(response, fiber.Map{
+			"id":              a.ID.Hex(),
+			"studentId":       a.StudentID,
+			"achievementType": a.AchievementType,
+			"title":           a.Title,
+			"description":     a.Description,
+			"details":         a.Details,
+			"tags":            a.Tags,
+			"status":          statusMap[a.ID.Hex()],
+			"createdAt":       a.CreatedAt,
+		})
+	}
+
+	return c.JSON(response)
+}
+
+func (s *AchievementService) Detail(c *fiber.Ctx) error {
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	achievementID := c.Params("id")
+	if achievementID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "achievement id required",
+		})
+	}
+
+	// 1️⃣ ambil reference dulu (POSTGRES)
+	ref, err := s.ReferenceRepo.GetByMongoID(achievementID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// 2️⃣ RBAC CHECK
+	switch role {
+
+	case "Mahasiswa":
+		student, err := s.StudentRepo.GetStudentByUserID(userID)
+		if err != nil || student.ID != ref.StudentID {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Dosen", "Dosen Wali", "Lecturer":
+		allowed, err := s.ReferenceRepo.IsAdvisorOfStudent(userID, ref.StudentID)
+		if err != nil || !allowed {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Admin":
+		// bebas
+
+	default:
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// 3️⃣ ambil detail Mongo
+	achievement, err := s.AchievementRepo.FindByID(context.Background(), achievementID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement detail not found",
+		})
+	}
+
+	// 4️⃣ response gabungan
+	return c.JSON(fiber.Map{
+		"id":              achievement.ID.Hex(),
+		"studentId":       achievement.StudentID,
+		"achievementType": achievement.AchievementType,
+		"title":           achievement.Title,
+		"description":     achievement.Description,
+		"details":         achievement.Details,
+		"tags":            achievement.Tags,
+		"status":          ref.Status,
+		"submittedAt":     ref.SubmittedAt,
+		"verifiedAt":      ref.VerifiedAt,
+		"verifiedBy":      ref.VerifiedBy,
+		"rejectionNote":   ref.RejectionNote,
+		"createdAt":       achievement.CreatedAt,
+	})
+}
 

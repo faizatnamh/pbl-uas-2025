@@ -45,4 +45,8 @@ func AchievementRoute(api fiber.Router, achievementService *service.AchievementS
 
 		return achievementService.CreateHandler(c)
 	})
+
+	ach.Get("/", achievementService.ListByRole)
+	ach.Get("/:id", achievementService.Detail)
+
 }
