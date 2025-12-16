@@ -285,3 +285,32 @@ func (r *AchievementReferenceRepository) Verify(id string, verifiedBy string) er
 
 	return nil
 }
+
+func (r *AchievementReferenceRepository) Reject(id string, rejectedBy string, note string) error {
+	query := `
+		UPDATE achievement_references
+		SET status = 'rejected',
+		    rejection_note = $2,
+		    verified_at = NOW(),
+		    verified_by = $3,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'submitted'
+	`
+
+	res, err := r.DB.Exec(query, id, note, rejectedBy)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
