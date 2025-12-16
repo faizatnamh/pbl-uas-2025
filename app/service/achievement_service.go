@@ -633,3 +633,96 @@ func (s *AchievementService) Reject(c *fiber.Ctx) error {
 		"message": "achievement rejected successfully",
 	})
 }
+
+func (s *AchievementService) History(c *fiber.Ctx) error {
+
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	mongoID := c.Params("id")
+	if mongoID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "achievement id required",
+		})
+	}
+
+	// ================= GET REFERENCE =================
+	ref, err := s.ReferenceRepo.GetByMongoID(mongoID)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "achievement not found",
+		})
+	}
+
+	// ================= RBAC =================
+	switch role {
+
+	case "Mahasiswa":
+		student, err := s.StudentRepo.GetStudentByUserID(userID)
+		if err != nil || student.ID != ref.StudentID {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Dosen", "Dosen Wali", "Lecturer":
+		ok, err := s.ReferenceRepo.IsAdvisorOfStudent(userID, ref.StudentID)
+		if err != nil || !ok {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Admin":
+		// full access
+
+	default:
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// ================= BUILD HISTORY =================
+	var history []fiber.Map
+
+	history = append(history, fiber.Map{
+		"status": "draft",
+		"at":     ref.CreatedAt,
+	})
+
+	if ref.SubmittedAt != nil {
+		history = append(history, fiber.Map{
+			"status": "submitted",
+			"at":     *ref.SubmittedAt,
+		})
+	}
+
+	if ref.Status == "verified" && ref.VerifiedAt != nil {
+		history = append(history, fiber.Map{
+			"status":      "verified",
+			"at":          *ref.VerifiedAt,
+			"verified_by": ref.VerifiedBy,
+		})
+	}
+
+	if ref.Status == "rejected" && ref.VerifiedAt != nil {
+		history = append(history, fiber.Map{
+			"status": "rejected",
+			"at":     *ref.VerifiedAt,
+			"note":   ref.RejectionNote,
+		})
+	}
+
+	if ref.Status == "deleted" {
+		history = append(history, fiber.Map{
+			"status": "deleted",
+			"at":     ref.UpdatedAt,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"achievement_id": mongoID,
+		"history":        history,
+	})
+}
