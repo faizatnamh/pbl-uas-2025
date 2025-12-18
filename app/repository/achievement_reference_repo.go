@@ -314,3 +314,35 @@ func (r *AchievementReferenceRepository) Reject(id string, rejectedBy string, no
 
 	return nil
 }
+
+func (r *AchievementReferenceRepository)GetByStudentIDForReport(studentID string) ([]models.AchievementReference, error) {
+	query := `
+		SELECT id, student_id, mongo_achievement_id, status
+		FROM achievement_references
+		WHERE student_id = $1
+		  AND status != 'deleted'
+	`
+
+	rows, err := r.DB.Query(query, studentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.AchievementReference
+	for rows.Next() {
+		var ref models.AchievementReference
+		if err := rows.Scan(
+			&ref.ID,
+			&ref.StudentID,
+			&ref.MongoID,
+			&ref.Status,
+		); err != nil {
+			return nil, err
+		}
+		list = append(list, ref)
+	}
+
+	return list, nil
+}
+

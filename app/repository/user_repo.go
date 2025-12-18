@@ -149,7 +149,11 @@ func (r *userRepository) GetAllUsers() ([]models.User, error) {
     users := []models.User{}
     for rows.Next() {
         var u models.User
-        rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.RoleID, &u.RoleName, &u.IsActive)
+		var roleID sql.NullString
+		var roleName sql.NullString
+        rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &roleID, &roleName, &u.IsActive)
+        u.RoleID = roleID.String
+        u.RoleName = roleName.String
         users = append(users, u)
     }
 

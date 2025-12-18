@@ -72,7 +72,6 @@ mongoDB := database.MongoDB()
 	permRepo := repository.NewPermissionRepository(db)
 	studentRepo := repository.NewStudentRepository(db)
 	lecturerRepo := repository.NewLecturerRepository(db)
-
 	achievementRepo := repository.NewAchievementRepository(mongoDB)
 	achievementRefRepo := repository.NewAchievementReferenceRepository(db)
 
@@ -80,12 +79,8 @@ mongoDB := database.MongoDB()
 	userService := service.NewUserService(userRepo, permRepo)
 	studentService := service.NewStudentService(studentRepo, lecturerRepo,  achievementRepo, achievementRefRepo )
 	lecturerService := service.NewLecturerService(lecturerRepo, studentRepo)
-
-	achievementService := service.NewAchievementService(
-		achievementRepo,
-		achievementRefRepo,
-        studentRepo, 
-	)
+	achievementService := service.NewAchievementService(achievementRepo,achievementRefRepo,studentRepo, )
+	reportService := service.NewReportService(studentRepo, achievementRefRepo, achievementRepo)
 
 	// -------- PUBLIC ROUTES --------
 	auth := app.Group("/api/v1/auth")
@@ -94,10 +89,10 @@ mongoDB := database.MongoDB()
 	// -------- PROTECTED ROUTES --------
 	api := app.Group("/api/v1")
 	api.Use(middleware.JWTMiddleware)
-
 	route.AdminRoute(api, permRepo, userService, studentService, lecturerService)
 	route.MahasiswaRoute(api, studentService)
 	route.AchievementRoute(api, achievementService)
+	route.ReportRoutes(api, reportService)
 
 
 	app.Listen(":8080")
