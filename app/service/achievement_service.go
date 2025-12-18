@@ -96,6 +96,7 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 	}
 
 	// ================= CREATE ACHIEVEMENT =================
+	points := calculateAchievementPoints(reqBody)
 
 	achievement := &models.Achievement{
 		AchievementType: reqBody.AchievementType,
@@ -103,6 +104,7 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 		Description:     reqBody.Description,
 		Details:         reqBody.Details,
 		Tags:            reqBody.Tags,
+		Points:          points,
 	}
 
 	if err := s.Create(context.Background(), studentID, achievement); err != nil {
@@ -311,11 +313,13 @@ func (s *AchievementService) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	points := calculateAchievementPoints(req)
 	// 5️⃣ update MongoDB
 	err = s.AchievementRepo.UpdateByID(
 		context.Background(),
 		achievementID,
 		req,
+		points,
 	)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -738,4 +742,68 @@ func (s *AchievementService) History(c *fiber.Ctx) error {
 		"achievement_id": mongoID,
 		"history":        history,
 	})
+}
+
+// ================= POINT CALCULATION =================
+
+func calculateAchievementPoints(req models.AchievementCreateRequest) int {
+
+	// ================= COMPETITION =================
+	if req.AchievementType == "competition" {
+		level := req.Details.CompetitionLevel
+		rank := 0
+
+		if req.Details.Rank != nil {
+			rank = int(*req.Details.Rank)
+		}
+
+		switch level {
+
+		case "international":
+			switch rank {
+			case 1:
+				return 100
+			case 2:
+				return 80
+			case 3:
+				return 60
+			default:
+				return 40
+			}
+
+		case "national":
+			switch rank {
+			case 1:
+				return 80
+			case 2:
+				return 60
+			case 3:
+				return 40
+			default:
+				return 20
+			}
+
+		case "regional":
+			return 10
+
+		case "local":
+			return 5
+
+		default:
+			return 10
+		}
+	}
+
+	// ================= PUBLICATION =================
+	if req.AchievementType == "publication" {
+		return 40
+	}
+
+	// ================= CERTIFICATION =================
+	if req.AchievementType == "certification" {
+		return 20
+	}
+
+	// ================= DEFAULT =================
+	return 10
 }

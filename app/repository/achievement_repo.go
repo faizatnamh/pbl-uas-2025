@@ -81,6 +81,7 @@ func (r *AchievementRepository) UpdateByID(
 	ctx context.Context,
 	id string,
 	req models.AchievementCreateRequest,
+	points int,
 ) error {
 
 	oid, err := primitive.ObjectIDFromHex(id)
@@ -95,6 +96,7 @@ func (r *AchievementRepository) UpdateByID(
 			"description":     req.Description,
 			"details":         req.Details,
 			"tags":            req.Tags,
+			"points": points,
 			"updatedAt":       time.Now(),
 		},
 	}
