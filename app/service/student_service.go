@@ -1,23 +1,35 @@
 package service
 
 import (
+	"context"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"pbluas/app/models"
 	"pbluas/app/repository"
 )
 
 type StudentService struct {
-	StudentRepo  repository.StudentRepository
-	LecturerRepo repository.LecturerRepository
+	StudentRepo        repository.StudentRepository
+	LecturerRepo       repository.LecturerRepository
+	AchievementRepo    *repository.AchievementRepository
+	AchievementRefRepo *repository.AchievementReferenceRepository
 }
+
 type AssignAdvisorRequest struct {
 	LecturerID string `json:"lecturer_id" validate:"required"`
 }
 
-func NewStudentService(studentRepo repository.StudentRepository, lecturerRepo repository.LecturerRepository) *StudentService {
+func NewStudentService(
+	studentRepo repository.StudentRepository, 
+	lecturerRepo repository.LecturerRepository,
+	achievementRepo *repository.AchievementRepository,
+	achievementRefRepo *repository.AchievementReferenceRepository,
+	) *StudentService {
 	return &StudentService{
 		StudentRepo:  studentRepo,
 		LecturerRepo: lecturerRepo,
+		AchievementRepo:    achievementRepo,
+		AchievementRefRepo: achievementRefRepo,
 	}
 }
 
@@ -128,3 +140,95 @@ func (s *StudentService) AssignAdvisor(c *fiber.Ctx) error {
 	})
 }
 
+func (s *StudentService) GetStudentAchievements(c *fiber.Ctx) error {
+
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	role := claims["role"].(string)
+	userID := claims["id"].(string)
+
+	studentID := c.Params("id")
+	if studentID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "student id required",
+		})
+	}
+
+	// ================= RBAC =================
+	switch role {
+
+	case "Mahasiswa":
+		student, err := s.StudentRepo.GetStudentByUserID(userID)
+		if err != nil || student.ID != studentID {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Dosen", "Dosen Wali", "Lecturer":
+		ok, err := s.AchievementRefRepo.IsAdvisorOfStudent(userID, studentID)
+		if err != nil || !ok {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "forbidden",
+			})
+		}
+
+	case "Admin":
+		// full access
+
+	default:
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// ================= GET REFERENCES =================
+	refs, err := s.AchievementRefRepo.GetByStudentID(studentID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if len(refs) == 0 {
+		return c.JSON([]fiber.Map{})
+	}
+
+	// ================= GET MONGO DATA =================
+	var mongoIDs []string
+	statusMap := make(map[string]models.AchievementReference)
+
+	for _, r := range refs {
+		mongoIDs = append(mongoIDs, r.MongoID)
+		statusMap[r.MongoID] = r
+	}
+
+	achievements, err := s.AchievementRepo.FindByIDs(context.Background(), mongoIDs)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	// ================= RESPONSE =================
+	var response []fiber.Map
+	for _, a := range achievements {
+		ref := statusMap[a.ID.Hex()]
+
+		response = append(response, fiber.Map{
+			"id":              a.ID.Hex(),
+			"achievementType": a.AchievementType,
+			"title":           a.Title,
+			"description":     a.Description,
+			"details":         a.Details,
+			"tags":            a.Tags,
+			"status":          ref.Status,
+			"submittedAt":     ref.SubmittedAt,
+			"verifiedAt":      ref.VerifiedAt,
+			"verifiedBy":      ref.VerifiedBy,
+			"rejectionNote":   ref.RejectionNote,
+			"createdAt":       a.CreatedAt,
+		})
+	}
+
+	return c.JSON(response)
+}

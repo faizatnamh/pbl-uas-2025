@@ -30,6 +30,7 @@ type AchievementDetails struct {
 }
 // ===== REQUEST BODY (CREATE ACHIEVEMENT) =====
 type AchievementCreateRequest struct {
+	StudentID       string             `json:"studentId,omitempty"` 
 	AchievementType string             `json:"achievementType"`
 	Title           string             `json:"title"`
 	Description     string             `json:"description"`

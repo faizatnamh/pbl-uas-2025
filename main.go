@@ -78,7 +78,7 @@ mongoDB := database.MongoDB()
 
 	// -------- INIT SERVICES --------
 	userService := service.NewUserService(userRepo, permRepo)
-	studentService := service.NewStudentService(studentRepo, lecturerRepo)
+	studentService := service.NewStudentService(studentRepo, lecturerRepo,  achievementRepo, achievementRefRepo )
 	lecturerService := service.NewLecturerService(lecturerRepo, studentRepo)
 
 	achievementService := service.NewAchievementService(

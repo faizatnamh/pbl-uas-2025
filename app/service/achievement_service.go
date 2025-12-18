@@ -55,19 +55,9 @@ func (s *AchievementService) Create(ctx context.Context, studentID string, req *
 
 func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 
-	claims, ok := c.Locals("user_claims").(jwt.MapClaims)
-	if !ok {
-		return c.Status(401).JSON(fiber.Map{
-			"message": "unauthorized",
-		})
-	}
-
-	userID, ok := claims["id"].(string)
-	if !ok || userID == "" {
-		return c.Status(401).JSON(fiber.Map{
-			"message": "invalid user id",
-		})
-	}
+	claims := c.Locals("user_claims").(jwt.MapClaims)
+	userID := claims["id"].(string)
+	role := claims["role"].(string)
 
 	var reqBody models.AchievementCreateRequest
 	if err := c.BodyParser(&reqBody); err != nil {
@@ -75,6 +65,37 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 			"message": "invalid request body",
 		})
 	}
+
+	var studentID string
+
+	// ================= ROLE HANDLING =================
+
+	switch role {
+
+	case "Mahasiswa":
+		student, err := s.StudentRepo.GetStudentByUserID(userID)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "student profile not found",
+			})
+		}
+		studentID = student.ID
+
+	case "Admin":
+		if reqBody.StudentID == "" {
+			return c.Status(400).JSON(fiber.Map{
+				"message": "studentId is required for admin",
+			})
+		}
+		studentID = reqBody.StudentID
+
+	default:
+		return c.Status(403).JSON(fiber.Map{
+			"message": "forbidden",
+		})
+	}
+
+	// ================= CREATE ACHIEVEMENT =================
 
 	achievement := &models.Achievement{
 		AchievementType: reqBody.AchievementType,
@@ -84,16 +105,7 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 		Tags:            reqBody.Tags,
 	}
 
-	// 🔥 INI KUNCI UTAMA
-	student, err := s.StudentRepo.GetStudentByUserID(userID)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"message": "student profile not found",
-		})
-	}
-
-	// 🔥 PAKAI students.id BUKAN userID
-	if err := s.Create(context.Background(), student.ID, achievement); err != nil {
+	if err := s.Create(context.Background(), studentID, achievement); err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"message": err.Error(),
 		})
@@ -103,6 +115,7 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 		"message": "achievement created successfully",
 	})
 }
+
 
 func (s *AchievementService) ListByRole(c *fiber.Ctx) error {
 	claims := c.Locals("user_claims").(jwt.MapClaims)
