@@ -53,8 +53,19 @@ func (s *AchievementService) Create(ctx context.Context, studentID string, req *
 	return s.ReferenceRepo.Create(ref)
 }
 
+// CreateAchievement godoc
+// @Summary Create new achievement
+// @Description Mahasiswa or Admin create achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body models.AchievementCreateRequest true "Achievement payload"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /achievements [post]
 func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
-
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	userID := claims["id"].(string)
 	role := claims["role"].(string)
@@ -119,6 +130,15 @@ func (s *AchievementService) CreateHandler(c *fiber.Ctx) error {
 }
 
 
+// ListAchievements godoc
+// @Summary Get achievements list
+// @Description List achievements based on user role (Mahasiswa, Dosen Wali, Admin)
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /achievements [get]
 func (s *AchievementService) ListByRole(c *fiber.Ctx) error {
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
@@ -192,6 +212,17 @@ default:
 	return c.JSON(response)
 }
 
+// GetAchievementDetail godoc
+// @Summary Get achievement detail
+// @Description Get achievement detail by ID
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /achievements/{id} [get]
 func (s *AchievementService) Detail(c *fiber.Ctx) error {
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
@@ -266,8 +297,19 @@ func (s *AchievementService) Detail(c *fiber.Ctx) error {
 	})
 }
 
+// UpdateAchievement godoc
+// @Summary Update achievement
+// @Description Update draft achievement (Mahasiswa only)
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Param body body models.AchievementCreateRequest true "Update payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /achievements/{id} [put]
 func (s *AchievementService) Update(c *fiber.Ctx) error {
-
 	// 🔐 ambil claims
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
@@ -332,8 +374,19 @@ func (s *AchievementService) Update(c *fiber.Ctx) error {
 	})
 }
 
+// UploadAchievementAttachment godoc
+// @Summary Upload achievement attachment
+// @Description Upload file for achievement
+// @Tags Achievements
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Param file formData file true "Attachment file"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /achievements/{id}/attachments [post]
 func (s *AchievementService) UploadAttachment(c *fiber.Ctx) error {
-
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)
@@ -414,8 +467,17 @@ func (s *AchievementService) UploadAttachment(c *fiber.Ctx) error {
 	})
 }
 
+// DeleteAchievement godoc
+// @Summary Delete achievement
+// @Description Delete draft achievement (Mahasiswa only)
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /achievements/{id} [delete]
 func (s *AchievementService) Delete(c *fiber.Ctx) error {
-
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)
@@ -469,9 +531,17 @@ func (s *AchievementService) Delete(c *fiber.Ctx) error {
 	})
 }
 
+// SubmitAchievement godoc
+// @Summary Submit achievement
+// @Description Submit achievement for verification
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /achievements/{id}/submit [post]
 func (s *AchievementService) Submit(c *fiber.Ctx) error {
-
-	// ================= AUTH =================
 	claims, ok := c.Locals("user_claims").(jwt.MapClaims)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{
@@ -535,9 +605,17 @@ func (s *AchievementService) Submit(c *fiber.Ctx) error {
 	})
 }
 
+// VerifyAchievement godoc
+// @Summary Verify achievement
+// @Description Verify submitted achievement (Dosen Wali / Admin)
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /achievements/{id}/verify [post]
 func (s *AchievementService) Verify(c *fiber.Ctx) error {
-
-	// ================= AUTH =================
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)
@@ -588,9 +666,19 @@ func (s *AchievementService) Verify(c *fiber.Ctx) error {
 	})
 }
 
+// RejectAchievement godoc
+// @Summary Reject achievement
+// @Description Reject submitted achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Param body body map[string]string true "Rejection note"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /achievements/{id}/reject [post]
 func (s *AchievementService) Reject(c *fiber.Ctx) error {
-
-	// ================= AUTH =================
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)
@@ -651,8 +739,16 @@ func (s *AchievementService) Reject(c *fiber.Ctx) error {
 	})
 }
 
+// AchievementHistory godoc
+// @Summary Get achievement history
+// @Description Get status history of achievement
+// @Tags Achievements
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /achievements/{id}/history [get]
 func (s *AchievementService) History(c *fiber.Ctx) error {
-
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)

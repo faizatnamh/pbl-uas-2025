@@ -20,7 +20,14 @@ func NewLecturerService(
 	}
 }
 
-// GET /lecturers (ADMIN)
+// GetLecturers godoc
+// @Summary Get lecturers list
+// @Description Get list of lecturers
+// @Tags Lecturers
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} map[string]interface{}
+// @Router /lecturers [get]
 func (s *LecturerService) GetAll(c *fiber.Ctx) error {
 	list, err := s.LecturerRepo.GetAll()
 	if err != nil {
@@ -29,7 +36,16 @@ func (s *LecturerService) GetAll(c *fiber.Ctx) error {
 	return c.JSON(list)
 }
 
-// GET /lecturers/:id/advisees (ADMIN)
+// GetLecturerAdvisees godoc
+// @Summary Get lecturer advisees
+// @Description Get students advised by lecturer
+// @Tags Lecturers
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Lecturer ID"
+// @Success 200 {array} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /lecturers/{id}/advisees [get]
 func (s *LecturerService) GetAdvisees(c *fiber.Ctx) error {
 	lecturerID := c.Params("id")
 

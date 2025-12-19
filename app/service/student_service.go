@@ -33,7 +33,15 @@ func NewStudentService(
 	}
 }
 
-// GET /students
+// GetStudents godoc
+// @Summary Get students list
+// @Description Get list of students based on role
+// @Tags Students
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /students [get]
 func (s *StudentService) GetStudents(c *fiber.Ctx) error {
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
@@ -76,7 +84,17 @@ func (s *StudentService) GetStudents(c *fiber.Ctx) error {
 	return c.Status(403).JSON(fiber.Map{"message": "forbidden"})
 }
 
-// GET /students/:id
+// GetStudentDetail godoc
+// @Summary Get student detail
+// @Description Get student detail by ID
+// @Tags Students
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /students/{id} [get]
 func (s *StudentService) GetStudentByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -110,6 +128,19 @@ func (s *StudentService) GetStudentByID(c *fiber.Ctx) error {
 	return c.Status(403).JSON(fiber.Map{"message": "forbidden"})
 }
 
+// AssignAdvisor godoc
+// @Summary Assign academic advisor
+// @Description Assign lecturer as advisor to student
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Param body body AssignAdvisorRequest true "Advisor payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /students/{id}/advisor [put]
 func (s *StudentService) AssignAdvisor(c *fiber.Ctx) error {
 	studentID := c.Params("id")
 
@@ -140,8 +171,17 @@ func (s *StudentService) AssignAdvisor(c *fiber.Ctx) error {
 	})
 }
 
+// GetStudentAchievements godoc
+// @Summary Get student achievements
+// @Description Get achievements of a student
+// @Tags Students
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {array} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /students/{id}/achievements [get]
 func (s *StudentService) GetStudentAchievements(c *fiber.Ctx) error {
-
 	claims := c.Locals("user_claims").(jwt.MapClaims)
 	role := claims["role"].(string)
 	userID := claims["id"].(string)

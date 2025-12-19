@@ -25,6 +25,17 @@ func NewReportService(
 	}
 }
 
+// GetStudentReport godoc
+// @Summary Get student achievement report
+// @Description Get detailed achievement report of a student
+// @Tags Reports
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /reports/student/{id} [get]
 func (s *ReportService) GetStudentReport(c *fiber.Ctx) error {
 	studentID := c.Params("id")
 
@@ -95,11 +106,17 @@ func (s *ReportService) GetStudentReport(c *fiber.Ctx) error {
 	})
 }
 
+// GetStatistics godoc
+// @Summary Get achievement statistics
+// @Description Get global achievement statistics and analytics
+// @Tags Reports
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 403 {object} map[string]interface{}
+// @Router /reports/statistics [get]
 func (s *ReportService) GetStatistics(c *fiber.Ctx) error {
-
-	// =========================
-	// 1️⃣ Ambil SEMUA reference (Postgres)
-	// =========================
 	refs, err := s.RefRepo.GetAll()
 	if err != nil {
 		return fiber.NewError(500, "failed to load achievement references")

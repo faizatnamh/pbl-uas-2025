@@ -32,7 +32,16 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// LOGIN USER
+// Login godoc
+// @Summary Login user
+// @Description Autentikasi user dan generate JWT
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body LoginRequest true "Login payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /auth/login [post]
 func (s *UserService) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 
@@ -141,7 +150,14 @@ func (s *UserService) Login(c *fiber.Ctx) error {
 }
 
 
-// PROFILE USER
+// Profile godoc
+// @Summary Get user profile
+// @Description Ambil data user dari JWT
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /auth/profile [get]
 func (s *UserService) Profile(c *fiber.Ctx) error {
 	tokenHeader := c.Get("Authorization")
 
@@ -188,7 +204,13 @@ func (s *UserService) Profile(c *fiber.Ctx) error {
 	})
 }
 
-// REFRESH TOKEN
+// Refresh godoc
+// @Summary Refresh access token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body map[string]string true "Refresh token"
+// @Router /auth/refresh [post]
 func (s *UserService) Refresh(c *fiber.Ctx) error {
 	type RefreshReq struct {
 		RefreshToken string `json:"refreshToken"`
@@ -277,7 +299,12 @@ func (s *UserService) Refresh(c *fiber.Ctx) error {
 	})
 }
 
-// LOGOUT USER
+// Logout godoc
+// @Summary Logout user
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Router /auth/logout [post]
 func (s *UserService) Logout(c *fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if auth == "" {
@@ -304,9 +331,13 @@ func (s *UserService) Logout(c *fiber.Ctx) error {
 	})
 }
 
-// GET ALL USERS (ADMIN)
+// GetAllUsers godoc
+// @Summary Get all users
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Router /users [get]
 func (s *UserService) GetAllUsers(c *fiber.Ctx) error {
-
     users, err := s.Repo.GetAllUsers()
     if err != nil {
         return c.Status(500).JSON(fiber.Map{
@@ -320,9 +351,14 @@ func (s *UserService) GetAllUsers(c *fiber.Ctx) error {
     })
 }
 
-// GET USER BY ID
+// GetUserByID godoc
+// @Summary Get user by ID
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "User ID"
+// @Router /users/{id} [get]
 func (s *UserService) GetUserByID(c *fiber.Ctx) error {
-
     id := c.Params("id")
     user, err := s.Repo.FindByUserID(id)
 
@@ -338,9 +374,19 @@ func (s *UserService) GetUserByID(c *fiber.Ctx) error {
     })
 }
 
-// CREATE USER (ADMIN)
+// CreateUser godoc
+// @Summary Create new user
+// @Description Admin creates a new user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body models.CreateUserRequest true "Create user payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users [post]
 func (s *UserService) CreateUser(c *fiber.Ctx) error {
-
     var req models.CreateUserRequest
     if err := c.BodyParser(&req); err != nil {
         return c.Status(400).JSON(fiber.Map{
@@ -372,9 +418,21 @@ func (s *UserService) CreateUser(c *fiber.Ctx) error {
     })
 }
 
-// UPDATE USER (ADMIN)
+// UpdateUser godoc
+// @Summary Update user
+// @Description Update user data by ID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID"
+// @Param body body models.UpdateUserRequest true "Update user payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /users/{id} [put]
 func (s *UserService) UpdateUser(c *fiber.Ctx) error {
-
     id := c.Params("id")
 
     user, err := s.Repo.FindByUserID(id)
@@ -421,9 +479,18 @@ func (s *UserService) UpdateUser(c *fiber.Ctx) error {
     })
 }
 
-// DELETE USER
+/// DeleteUser godoc
+// @Summary Delete user
+// @Description Delete user by ID
+// @Tags Users
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /users/{id} [delete]
 func (s *UserService) DeleteUser(c *fiber.Ctx) error {
-
     id := c.Params("id")
 
     err := s.Repo.DeleteUser(id)
@@ -439,9 +506,21 @@ func (s *UserService) DeleteUser(c *fiber.Ctx) error {
     })
 }
 
-// UPDATE USER ROLE (ADMIN)
+// UpdateUserRole godoc
+// @Summary Update user role
+// @Description Update role of a user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID"
+// @Param body body models.UpdateUserRoleRequest true "Update role payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /users/{id}/role [put]
 func (s *UserService) UpdateUserRole(c *fiber.Ctx) error {
-
     id := c.Params("id")
 
     var req models.UpdateUserRoleRequest
