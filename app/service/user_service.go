@@ -12,6 +12,7 @@ import (
 
 	"pbluas/app/models"
 	"pbluas/app/repository"
+	"pbluas/config"
 )
 
 type UserService struct {
@@ -278,6 +279,25 @@ func (s *UserService) Refresh(c *fiber.Ctx) error {
 
 // LOGOUT USER
 func (s *UserService) Logout(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if auth == "" {
+		return c.Status(401).JSON(fiber.Map{
+			"message": "Missing token",
+		})
+	}
+
+	parts := strings.Split(auth, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return c.Status(401).JSON(fiber.Map{
+			"message": "Invalid token format",
+		})
+	}
+
+	token := parts[1]
+
+	// blacklist token
+	config.BlacklistToken(token)
+
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"message": "Logged out successfully",

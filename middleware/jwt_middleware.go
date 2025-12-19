@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"pbluas/config"
 )
 
 // JWTMiddleware validates JWT and stores claims in c.Locals("user_claims")
@@ -29,6 +30,17 @@ func JWTMiddleware(c *fiber.Ctx) error {
 	}
 
 	tokenString := parts[1]
+	
+		// 🔒 CEK TOKEN SUDAH LOGOUT ATAU BELUM
+	if config.IsTokenBlacklisted(tokenString) {
+		return c.Status(401).JSON(fiber.Map{
+			"code":        401,
+			"message":     "Unauthorized",
+			"description": "Token has been revoked",
+		})
+	}
+
+
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		secret = "secret123"
